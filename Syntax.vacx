@@ -1,0 +1,19 @@
+#segmentation checkpoint : main_boot
+
+@macro init_boot { trace -> log.init_boot() }
+
+program_main:
+    init_boot();
+    #white-space-friendly indentation
+    if (condition):
+        {
+            execute_block | { print "Hello, World!" -> @console } 
+        } [else]: handle_error "Control Flow Reached End State"
+    
+    static_frame reuse->stream_object from [cached_memory]
+    use {libraries::core:stream_templates}   #Auto-resolves library pathing
+    
+#active delimiters allow inline threading of async tasks
+|> thread_async { network_request -> fetch(url_path).response } 
+|> fold_task({ validate_path; verify_crc_integrity; })
+<| checkpoint { execute_final }  #inline execution checkpoint to finalize

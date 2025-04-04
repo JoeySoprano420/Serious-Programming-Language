@@ -1,0 +1,3 @@
+import math
+
+let result = math.sqrt(16)

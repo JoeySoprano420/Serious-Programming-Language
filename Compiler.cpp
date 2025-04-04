@@ -500,3 +500,253 @@ private:
     }
 };
 
+#include <thread>
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+#include <functional>
+#include <vector>
+
+class ThreadPool {
+    std::vector<std::thread> threads;
+    std::queue<std::function<void()>> tasks;
+    std::mutex queueMutex;
+    std::condition_variable condition;
+    bool stop;
+
+public:
+    ThreadPool(size_t numThreads);
+    ~ThreadPool();
+    void enqueueTask(std::function<void()> task);
+};
+
+ThreadPool::ThreadPool(size_t numThreads) : stop(false) {
+    for (size_t i = 0; i < numThreads; ++i) {
+        threads.emplace_back([this] {
+            while (true) {
+                std::function<void()> task;
+                {
+                    std::unique_lock<std::mutex> lock(queueMutex);
+                    condition.wait(lock, [this] { return stop || !tasks.empty(); });
+                    if (stop && tasks.empty()) return;
+                    task = std::move(tasks.front());
+                    tasks.pop();
+                }
+                task();
+            }
+        });
+    }
+}
+
+ThreadPool::~ThreadPool() {
+    {
+        std::unique_lock<std::mutex> lock(queueMutex);
+        stop = true;
+    }
+    condition.notify_all();
+    for (std::thread& thread : threads) {
+        thread.join();
+    }
+}
+
+void ThreadPool::enqueueTask(std::function<void()> task) {
+    {
+        std::unique_lock<std::mutex> lock(queueMutex);
+        tasks.push(std::move(task));
+    }
+    condition.notify_one();
+}
+
+void parseFunctionsConcurrently(const std::vector<std::string>& functions) {
+    ThreadPool threadPool(std::thread::hardware_concurrency());
+
+    for (const auto& func : functions) {
+        threadPool.enqueueTask([func] {
+            parseFunction(func);  // Parse each function in parallel
+        });
+    }
+}
+
+// Link math library statically
+extern "C" double my_sqrt(double x);
+
+int main() {
+    double result = my_sqrt(16.0);  // Call linked function
+    std::cout << "Square root: " << result << std::endl;
+}
+
+void handleRuntimeError(const std::string& errorMessage) {
+    std::cerr << "[RUNTIME ERROR] " << errorMessage << std::endl;
+    printStackTrace();
+    exit(EXIT_FAILURE);
+}
+
+void printStackTrace() {
+    std::vector<std::string> stackTrace = getStackTrace(); // Retrieve stack trace
+    for (const auto& frame : stackTrace) {
+        std::cerr << "    at " << frame << std::endl;
+    }
+}
+
+void reportError(const std::string& message, int line, const std::string& codeSnippet) {
+    std::cerr << "[ERROR] Line " << line << ": " << message << std::endl;
+    std::cerr << "    Code: " << codeSnippet << std::endl;
+}
+
+ASTNode parseFunction() {
+    if (!match("FUNC")) {
+        reportError("Expected 'FUNC' keyword for function declaration", currentLine(), currentCodeSnippet());
+        throw ParseException("Missing FUNC keyword");
+    }
+
+    // Parse function name and arguments (with error handling)
+    std::string funcName = nextToken();
+    if (!isIdentifier(funcName)) {
+        reportError("Invalid function name", currentLine(), funcName);
+    }
+    
+    // Further parsing logic...
+}
+
+section .bss
+    buffer resb 64   ; Reserve 64 bytes in uninitialized data section
+
+section .text
+_start:
+    mov rsi, buffer  ; Load buffer address into register
+    mov byte [rsi], 0 ; Initialize buffer with null terminator
+    
+    ; Further memory operations...
+
+my_function:
+    push rbp          ; Save base pointer
+    mov rbp, rsp      ; Create stack frame
+    
+    ; Function body (e.g., arithmetic operations)
+    mov rax, [rbp+8]  ; Load function argument from stack
+    
+    pop rbp           ; Restore base pointer
+    ret               ; Return to caller
+
+my_function:
+    push rbp          ; Save base pointer
+    mov rbp, rsp      ; Create stack frame
+    
+    ; Function body (e.g., arithmetic operations)
+    mov rax, [rbp+8]  ; Load function argument from stack
+    
+    pop rbp           ; Restore base pointer
+    ret               ; Return to caller
+
+section .data
+    result db 0      ; Allocate a byte for result
+
+section .text
+    global _start
+
+_start:
+    mov rax, 5        ; Load immediate value into register
+    mov rbx, 3        ; Load another value
+    add rax, rbx      ; Perform addition using registers
+    mov [result], rax ; Store result in memory
+
+    ; Exit
+    mov rax, 60       ; Syscall number for exit
+    xor rdi, rdi      ; Exit status 0
+    syscall
+
+ASTNode parseIfElse() {
+    ASTNode ifNode{"IfStatement", "", {}};
+    
+    if (match("KEYWORD: IF")) {
+        match("(");
+        ifNode.children.push_back(parseCondition());
+        match(")");
+        ifNode.children.push_back(parseBlock());
+        
+        if (match("KEYWORD: ELSE")) {
+            ifNode.children.push_back(parseBlock());
+        }
+    }
+    
+    return ifNode;
+}
+
+ASTNode parseFunction() {
+    ASTNode funcNode{"FunctionDeclaration", "", {}};
+    
+    if (match("KEYWORD: FUNC")) {
+        funcNode.children.push_back({"Identifier", nextToken(), {}});
+        match("(");
+        
+        // Parse parameter list
+        while (!match(")")) {
+            funcNode.children.push_back({"Parameter", nextToken(), {}});
+            if (!match(",")) break;
+        }
+        
+        funcNode.children.push_back(parseBlock());
+    }
+    
+    return funcNode;
+}
+
+ASTNode parseForLoop() {
+    ASTNode loopNode{"ForLoop", "", {}};
+
+    if (match("KEYWORD: FOR")) {
+        // Parse initialization: (let i = 0;)
+        match("(");
+        loopNode.children.push_back(parseVariableDeclaration());
+        match(";");
+        
+        // Parse loop condition (i < 10)
+        loopNode.children.push_back(parseCondition());
+        match(";");
+        
+        // Parse increment (i++)
+        loopNode.children.push_back(parseExpression());
+        match(")");
+        
+        // Parse loop body
+        loopNode.children.push_back(parseBlock());
+    }
+    
+    return loopNode;
+}
+
+ASTNode parseWhileLoop() {
+    ASTNode loopNode{"WhileLoop", "", {}};
+    
+    if (match("KEYWORD: WHILE")) {
+        match("(");
+        loopNode.children.push_back(parseCondition());
+        match(")");
+        loopNode.children.push_back(parseBlock());
+    }
+    
+    return loopNode;
+}
+
+#include <fstream>
+
+void generateAssembly(ASTNode root) {
+    ofstream asmFile("output.asm");
+    
+    asmFile << "section .text" << endl;
+    asmFile << "global _start" << endl;
+    asmFile << "_start:" << endl;
+    
+    // Example for handling simple variable assignment
+    if (root.type == "VariableDeclaration") {
+        asmFile << "mov rax, 10" << endl;  // Example: Loading immediate value
+        asmFile << "mov [rbp-4], rax" << endl;  // Storing in stack memory
+    }
+    
+    asmFile << "mov rax, 60" << endl;  // Exit syscall
+    asmFile << "xor rdi, rdi" << endl;
+    asmFile << "syscall" << endl;
+    
+    asmFile.close();
+}
+

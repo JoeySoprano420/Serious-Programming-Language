@@ -346,5 +346,189 @@ func main() {
 
 Serious is designed to be a versatile, high-performance language suitable for a wide range of applications, from system-level programming to high-level application development. By combining powerful optimizations, manual memory control, and secure coding practices, Serious empowers developers to write fast, efficient, and secure code.
 
-For more information and updates, please visit the [Serious GitHub repository](https://github.com/serious-lang/serious).
+To create a batch file that will automate all the steps for setting up the project, downloading dependencies, and resolving any missing components, we'll follow these tasks:
+
+1. **Install necessary dependencies**.
+2. **Clone any external repositories** (e.g., external libraries).
+3. **Run CMake to generate build files**.
+4. **Build the project using `make`**.
+5. **Handle missing dependencies** (e.g., downloading and installing them).
+6. **Add a custom logo/icon** for the project.
+7. **Handle all setup in one file for simplicity**.
+
+### Batch File (`setup_compiler.bat`)
+
+```batch
+@echo off
+setlocal enabledelayedexpansion
+
+:: Set the project root directory
+set PROJECT_DIR=%CD%
+set BUILD_DIR=%PROJECT_DIR%\build
+set REPO_URL=https://github.com/youruser/yourrepository.git
+
+:: Logo File and Icon Setup
+set ICON_FILE=%PROJECT_DIR%\resources\eighleaux_logo.ico
+
+:: Check for required dependencies (git, cmake, g++, make, libcurl)
+echo Checking dependencies...
+
+:: Check for Git
+where git >nul 2>nul
+if errorlevel 1 (
+    echo Git is not installed. Installing Git...
+    call :installGit
+)
+
+:: Check for CMake
+where cmake >nul 2>nul
+if errorlevel 1 (
+    echo CMake is not installed. Installing CMake...
+    call :installCMake
+)
+
+:: Check for g++
+where g++ >nul 2>nul
+if errorlevel 1 (
+    echo g++ is not installed. Installing g++...
+    call :installGpp
+)
+
+:: Check for make
+where make >nul 2>nul
+if errorlevel 1 (
+    echo make is not installed. Installing make...
+    call :installMake
+)
+
+:: Check for libcurl
+where curl >nul 2>nul
+if errorlevel 1 (
+    echo libcurl is not installed. Installing libcurl...
+    call :installLibCurl
+)
+
+:: Check for required icon/logo file
+if not exist "%ICON_FILE%" (
+    echo Eighleaux logo not found. Downloading logo...
+    call :downloadLogo
+)
+
+:: Clone the repository if it does not exist
+if not exist "%PROJECT_DIR%\yourrepository" (
+    echo Cloning repository...
+    git clone %REPO_URL% %PROJECT_DIR%\yourrepository
+)
+
+:: Go to the project directory
+cd %PROJECT_DIR%\yourrepository
+
+:: Run CMake to configure the project
+if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
+cd "%BUILD_DIR%"
+
+echo Running CMake to configure the build...
+cmake ..
+
+:: Build the project using make
+echo Building the project...
+make
+
+:: Add custom icon/logo to the executable (assuming Windows .exe output)
+echo Adding Eighleaux logo to the executable...
+call :addIconToExe "%PROJECT_DIR%\yourrepository\build\advanced_compiler.exe" "%ICON_FILE%"
+
+echo Build and setup complete. Run the program using the 'advanced_compiler' executable in the build directory.
+
+:: End script
+endlocal
+exit /b
+
+:: Functions for installation of dependencies
+:installGit
+echo Installing Git...
+:: You can change this for your system's preferred package manager or download method
+choco install git
+goto :eof
+
+:installCMake
+echo Installing CMake...
+:: Install CMake via Chocolatey (Windows package manager)
+choco install cmake
+goto :eof
+
+:installGpp
+echo Installing g++...
+:: Install g++ via Chocolatey (Windows package manager)
+choco install mingw
+goto :eof
+
+:installMake
+echo Installing make...
+:: Install make via Chocolatey
+choco install make
+goto :eof
+
+:installLibCurl
+echo Installing libcurl...
+:: Download libcurl from official site or use a package manager like choco
+choco install curl
+goto :eof
+
+:downloadLogo
+echo Downloading Eighleaux logo...
+:: Download the logo using curl
+curl -o "%ICON_FILE%" https://example.com/eighleaux_logo.ico
+goto :eof
+
+:addIconToExe
+:: This function adds the custom icon/logo to the executable using a resource editor or command-line tool.
+:: In this case, we can use a tool like ResourceHacker (https://www.angusj.com/resourcehacker/) to change the icon of the .exe file.
+:: Make sure you have ResourceHacker installed and available in your PATH, or download it manually.
+
+echo Adding icon to executable...
+:: Assuming ResourceHacker is installed or present in the project directory
+ResourceHacker.exe -open %1 -save %1 -action addoverwrite -res "%ICON_FILE%" -mask ICONGROUP,1,
+goto :eof
+```
+
+### Explanation:
+
+1. **Dependency Check and Installation**:
+   - The batch file first checks if the required tools are installed (`git`, `cmake`, `g++`, `make`, `curl`).
+   - If any of the dependencies are missing, it installs them using **Chocolatey** (a Windows package manager). You can adjust the installation commands to your preferred method (e.g., manually downloading installers).
+
+2. **Cloning the Repository**:
+   - If the repository is not already cloned, it will clone it into the `yourrepository` directory.
+
+3. **Running CMake**:
+   - The batch script creates a build directory (`build`), runs `cmake ..` to generate the necessary build files, and then builds the project using `make`.
+
+4. **Adding the Eighleaux Icon**:
+   - If the logo file (icon) doesn't exist in the `resources` folder, the batch file will download it from a URL. You need to replace `https://example.com/eighleaux_logo.ico` with the actual URL where the logo is hosted.
+   - It uses **ResourceHacker** (a popular tool for modifying executable resources) to add the custom icon to the compiled executable. You can also use any other tool that supports this if needed.
+
+5. **Error Handling**:
+   - The script uses `where` to check if the necessary commands are available, and if they aren’t, it installs them via **Chocolatey**. This ensures a smooth setup without manual intervention.
+
+### Required Tools and Setup:
+
+1. **Chocolatey**: This batch file assumes **Chocolatey** is installed on your system for easy installation of dependencies. You can install Chocolatey by following [this link](https://chocolatey.org/install).
+   
+2. **Resource Hacker**: To modify the executable’s icon, download **Resource Hacker** (or any similar tool) and make sure it's in your `PATH` or available in the project directory. Resource Hacker can be downloaded [here](https://www.angusj.com/resourcehacker/).
+
+3. **URL for Logo**: Make sure the logo for the Eighleaux theme is hosted somewhere publicly, or adjust the script to point to the correct file location.
+
+### How to Run:
+
+1. Place this batch file (`setup_compiler.bat`) in the root of your project directory.
+2. Double-click the batch file to start the setup process.
+3. The script will automatically handle the following:
+   - Install missing dependencies.
+   - Clone the repository.
+   - Build the project with CMake and `make`.
+   - Download the logo if it's missing.
+   - Add the custom logo to the executable.
+
+This should provide a fully automated environment to set up and build your project without requiring manual steps for dependency installation or setup.
 

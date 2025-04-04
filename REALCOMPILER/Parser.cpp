@@ -98,3 +98,39 @@ ASTNode parseWhileLoop() {
     return loopNode;
 }
 
+ASTNode parseFunction() {
+    ASTNode funcNode{"FunctionDeclaration", "", {}};
+    
+    if (match("KEYWORD: FUNC")) {
+        funcNode.children.push_back({"Identifier", nextToken(), {}});
+        match("(");
+        
+        // Parse parameter list
+        while (!match(")")) {
+            funcNode.children.push_back({"Parameter", nextToken(), {}});
+            if (!match(",")) break;
+        }
+        
+        funcNode.children.push_back(parseBlock());
+    }
+    
+    return funcNode;
+}
+
+ASTNode parseIfElse() {
+    ASTNode ifNode{"IfStatement", "", {}};
+    
+    if (match("KEYWORD: IF")) {
+        match("(");
+        ifNode.children.push_back(parseCondition());
+        match(")");
+        ifNode.children.push_back(parseBlock());
+        
+        if (match("KEYWORD: ELSE")) {
+            ifNode.children.push_back(parseBlock());
+        }
+    }
+    
+    return ifNode;
+}
+

@@ -60,3 +60,41 @@ int main() {
     cout << "AST built successfully!" << endl;
     return 0;
 }
+
+ASTNode parseForLoop() {
+    ASTNode loopNode{"ForLoop", "", {}};
+
+    if (match("KEYWORD: FOR")) {
+        // Parse initialization: (let i = 0;)
+        match("(");
+        loopNode.children.push_back(parseVariableDeclaration());
+        match(";");
+        
+        // Parse loop condition (i < 10)
+        loopNode.children.push_back(parseCondition());
+        match(";");
+        
+        // Parse increment (i++)
+        loopNode.children.push_back(parseExpression());
+        match(")");
+        
+        // Parse loop body
+        loopNode.children.push_back(parseBlock());
+    }
+    
+    return loopNode;
+}
+
+ASTNode parseWhileLoop() {
+    ASTNode loopNode{"WhileLoop", "", {}};
+    
+    if (match("KEYWORD: WHILE")) {
+        match("(");
+        loopNode.children.push_back(parseCondition());
+        match(")");
+        loopNode.children.push_back(parseBlock());
+    }
+    
+    return loopNode;
+}
+

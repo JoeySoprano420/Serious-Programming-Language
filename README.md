@@ -202,3 +202,9 @@ use {libraries::core:stream_templates}
 
 **Serious** is more than just a programming language; it’s a powerful, multi-faceted tool for the next generation of software development. With its unique combination of high-performance features, flexible syntax, and low-level control, **Serious** offers developers the freedom to build efficient, secure, and scalable applications. Whether working on system-level programming, real-time applications, or cloud-based systems, **Serious** provides a comprehensive solution that adapts to a wide variety of use cases, enabling developers to push the limits of what is possible with modern computing.
 
+🛠 Dependencies You May Need Installed:
+g++, nasm, and optionally ld or gcc as linker
+
+For GUI: SFML, SDL, Qt, or native GUI library
+
+If using LLVM IR as an intermediate step: install llvm, clang, and llc
